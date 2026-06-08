@@ -177,15 +177,107 @@ func FilePath(configFilePath string) string {
 	return filepath.Join(dir, ManagementFileName)
 }
 
-// ApplyQuotaPaginationPatch raises local quota page limits in the upstream management UI.
+// ApplyQuotaPaginationPatch keeps local management UI fixes applied to upstream bundles.
 func ApplyQuotaPaginationPatch(data []byte) []byte {
 	if len(data) == 0 {
 		return data
 	}
 
 	html := string(data)
-	patched := strings.ReplaceAll(html, "var Rb=25,zb=30,Bb=(e,t=6)=>", "var Rb=150,zb=1/0,Bb=(e,t=150)=>")
-	patched = strings.ReplaceAll(patched, "Math.min(c*3,Rb)", "Rb")
+	patched := html
+
+	for _, replacement := range []struct {
+		old string
+		new string
+	}{
+		{
+			old: "function Pb({item:e,quota:t,resolvedTheme:n,i18nPrefix:r,cardIdleMessageKey:i,cardClassName:a,defaultType:o,canRefresh:s=!1,onRefresh:c,renderQuotaItems:l}){let{t:u}=qo(),d=",
+			new: "function Pb({item:e,quota:t,resolvedTheme:n,i18nPrefix:r,cardIdleMessageKey:i,cardClassName:a,defaultType:o,canRefresh:s=!1,onRefresh:c,canDelete:P=!1,onDelete:F,deleting:ne=!1,renderQuotaItems:l}){let{t:u}=qo(),d=",
+		},
+		{
+			old: "children:[(0,I.jsx)(`span`,{className:U.typeBadge,style:{backgroundColor:p.bg,color:p.text,...p.border?{border:p.border}:{}},children:_(d)}),(0,I.jsx)(`span`,{className:U.fileName,children:e.name})]}),(0,I.jsx)(`div`,{className:U.quotaSection",
+			new: "children:[(0,I.jsx)(`span`,{className:U.typeBadge,style:{backgroundColor:p.bg,color:p.text,...p.border?{border:p.border}:{}},children:_(d)}),(0,I.jsx)(`span`,{className:U.fileName,style:{flex:1,minWidth:0},children:e.name}),F&&(0,I.jsx)(L,{variant:`danger`,size:`sm`,onClick:F,disabled:!P||ne,title:u(`auth_files.delete_button`),children:ne?(0,I.jsx)(gy,{size:14}):u(`common.delete`)})]}),(0,I.jsx)(`div`,{className:U.quotaSection",
+		},
+		{
+			old: "function Vb({config:e,files:t,loading:n,disabled:r}){let{t:i}=qo(),a=jc(e=>e.resolvedTheme),o=Sc(e=>e.showNotification),s=lp(t=>t[e.storeSetter]),[c,l]=Lb(380)",
+			new: "function Vb({config:e,files:t,loading:n,disabled:r,onDeleted:q}){let{t:i}=qo(),a=jc(e=>e.resolvedTheme),o=Sc(e=>e.showNotification),P=Sc(e=>e.showConfirmation),s=lp(t=>t[e.storeSetter]),[F,ne]=(0,y.useState)(null),[c,l]=Lb(380)",
+		},
+		{
+			old: "},[e,r,D,s,o,i]),M=(0,I.jsxs)(`div`,{className:U.titleWrapper",
+			new: "},[e,r,D,s,o,i]),te=(0,y.useCallback)(t=>{if(r||F)return;P({title:i(`auth_files.delete_title`,{defaultValue:`Delete File`}),message:`${i(`auth_files.delete_confirm`)} \"${t.name}\" ?`,variant:`danger`,confirmText:i(`common.confirm`),onConfirm:async()=>{ne(t.name);try{await Gh.deleteFile(t.name),o(i(`auth_files.delete_success`),`success`),s(e=>{let n={...e};return delete n[t.name],n});if(q)try{await q()}catch(t){let n=t instanceof Error?t.message:``;o(`${i(`notification.refresh_failed`)}: ${n}`,`error`)}}catch(t){let n=t instanceof Error?t.message:``;o(`${i(`notification.delete_failed`)}: ${n}`,`error`)}finally{ne(null)}}})},[r,F,P,i,o,s,q]),M=(0,I.jsxs)(`div`,{className:U.titleWrapper",
+		},
+		{
+			old: "canRefresh:!r&&!t.disabled,onRefresh:()=>void ee(t),renderQuotaItems:e.renderQuotaItems}",
+			new: "canRefresh:!r&&!t.disabled,onRefresh:()=>void ee(t),canDelete:!r,onDelete:()=>te(t),deleting:F===t.name,renderQuotaItems:e.renderQuotaItems}",
+		},
+		{
+			old: "m.length>_&&g===`paged`",
+			new: "m.length>0&&g===`paged`",
+		},
+		{
+			old: "var Rb=25,zb=30,Bb=(e,t=6)=>",
+			new: "var Rb=100,zb=1/0,Bb=(e,t=100)=>",
+		},
+		{
+			old: "var Rb=150,zb=1/0,Bb=",
+			new: "var Rb=100,zb=1/0,Bb=",
+		},
+		{
+			old: "Bb=(e,t=150)=>",
+			new: "Bb=(e,t=100)=>",
+		},
+		{
+			old: "Math.min(c*3,Rb)",
+			new: "Rb",
+		},
+		{
+			old: "ty=e=>Math.min(30,Math.max(3,Math.round(e)))",
+			new: "ty=e=>Math.min(100,Math.max(3,Math.round(e)))",
+		},
+		{
+			old: "i<3||i>30||",
+			new: "i<3||i>100||",
+		},
+		{
+			old: "i<3||i>30",
+			new: "i<3||i>100",
+		},
+		{
+			old: "min:3,max:30,step:1",
+			new: "min:3,max:100,step:1",
+		},
+		{
+			old: "max:30,step:1",
+			new: "max:100,step:1",
+		},
+		{
+			old: "(0,I.jsx)(Vb,{config:hx,files:n,loading:i,disabled:c})",
+			new: "(0,I.jsx)(Vb,{config:hx,files:n,loading:i,disabled:c,onDeleted:u})",
+		},
+		{
+			old: "(0,I.jsx)(Vb,{config:gx,files:n,loading:i,disabled:c})",
+			new: "(0,I.jsx)(Vb,{config:gx,files:n,loading:i,disabled:c,onDeleted:u})",
+		},
+		{
+			old: "(0,I.jsx)(Vb,{config:_x,files:n,loading:i,disabled:c})",
+			new: "(0,I.jsx)(Vb,{config:_x,files:n,loading:i,disabled:c,onDeleted:u})",
+		},
+		{
+			old: "(0,I.jsx)(Vb,{config:Ox,files:n,loading:i,disabled:c})",
+			new: "(0,I.jsx)(Vb,{config:Ox,files:n,loading:i,disabled:c,onDeleted:u})",
+		},
+		{
+			old: "(0,I.jsx)(Vb,{config:vx,files:n,loading:i,disabled:c})",
+			new: "(0,I.jsx)(Vb,{config:vx,files:n,loading:i,disabled:c,onDeleted:u})",
+		},
+		{
+			old: "(0,I.jsx)(Vb,{config:Dx,files:n,loading:i,disabled:c})",
+			new: "(0,I.jsx)(Vb,{config:Dx,files:n,loading:i,disabled:c,onDeleted:u})",
+		},
+	} {
+		patched = strings.ReplaceAll(patched, replacement.old, replacement.new)
+	}
+
 	if patched == html {
 		return data
 	}
