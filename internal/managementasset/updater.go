@@ -177,6 +177,21 @@ func FilePath(configFilePath string) string {
 	return filepath.Join(dir, ManagementFileName)
 }
 
+// ApplyQuotaPaginationPatch raises local quota page limits in the upstream management UI.
+func ApplyQuotaPaginationPatch(data []byte) []byte {
+	if len(data) == 0 {
+		return data
+	}
+
+	html := string(data)
+	patched := strings.ReplaceAll(html, "var Rb=25,zb=30,Bb=(e,t=6)=>", "var Rb=150,zb=1/0,Bb=(e,t=150)=>")
+	patched = strings.ReplaceAll(patched, "Math.min(c*3,Rb)", "Rb")
+	if patched == html {
+		return data
+	}
+	return []byte(patched)
+}
+
 // EnsureLatestManagementHTML checks the latest management.html asset and updates the local copy when needed.
 // It coalesces concurrent sync attempts and returns whether the asset exists after the sync attempt.
 func EnsureLatestManagementHTML(ctx context.Context, staticDir string, proxyURL string, panelRepository string) bool {
