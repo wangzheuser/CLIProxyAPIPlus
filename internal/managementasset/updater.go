@@ -215,7 +215,7 @@ func ApplyQuotaPaginationPatch(data []byte) []byte {
 			new: "},[ce,u]),",
 		},
 		{
-			old: "S(g===`all`?Math.max(1,m.length):Rb)",
+			old: "S(g===`all`?Math.max(1,m.length):Math.min(c*3,Rb))",
 			new: "S(le===`all`?Math.max(1,se.length):Rb)",
 		},
 		{
@@ -263,8 +263,8 @@ func ApplyQuotaPaginationPatch(data []byte) []byte {
 			new: "se.length===0?(0,I.jsx)(Bv,{title:i(m.length===0?`${e.i18nPrefix}.empty_title`:`quota_management.status_filter_empty_title`),description:i(m.length===0?`${e.i18nPrefix}.empty_desc`:`quota_management.status_filter_empty_desc`)})",
 		},
 		{
-			old: "count:m.length",
-			new: "count:se.length",
+			old: "children:i(`auth_files.pagination_info`,{current:b,total:v,count:m.length})",
+			new: "children:i(`auth_files.pagination_info`,{current:b,total:v,count:se.length})",
 		},
 		{
 			old: "m.length>_&&g===`paged`",
@@ -305,6 +305,26 @@ func ApplyQuotaPaginationPatch(data []byte) []byte {
 		{
 			old: "max:30,step:1",
 			new: "max:100,step:1",
+		},
+		{
+			old: "quota_management:{title:`配额管理`,description:`集中查看 OAuth 额度与剩余情况`,refresh_files:`刷新认证文件`,refresh_files_and_quota:`刷新认证文件&额度`,refresh_all_credentials:`刷新全部凭证`,card_idle_hint:`请使用顶部“刷新全部凭证”按钮获取最新额度。`}",
+			new: "quota_management:{title:`配额管理`,description:`集中查看 OAuth 额度与剩余情况`,refresh_files:`刷新认证文件`,refresh_files_and_quota:`刷新认证文件&额度`,refresh_all_credentials:`刷新全部凭证`,card_idle_hint:`请使用顶部“刷新全部凭证”按钮获取最新额度。`,status_filter_label:`额度状态筛选`,status_filter_all:`全部`,status_filter_normal:`正常`,status_filter_error:`异常`,status_filter_empty_title:`当前筛选没有账号`,status_filter_empty_desc:`请切换到“全部”或先刷新全部凭证后再查看。`,delete_filtered_button:`全部删除`,delete_filtered_title:`删除当前筛选的 {{scope}} 账号（{{count}} 个）`,delete_filtered_confirm:`确定要删除当前筛选出的 {{count}} 个 {{scope}} 账号吗？此操作不可恢复！`,delete_filtered_success:`成功删除 {{count}} 个账号`,delete_filtered_partial:`账号删除完成，成功 {{success}} 个，失败 {{failed}} 个`,delete_filtered_failed:`删除账号失败`,delete_filtered_none:`当前筛选没有可删除的账号`}",
+		},
+		{
+			old: "quota_management:{title:`配額管理`,description:`集中查看 OAuth 配額與剩餘情況`,refresh_files:`重新整理驗證檔案`,refresh_files_and_quota:`重新整理驗證檔案&配額`,refresh_all_credentials:`重新整理全部憑證`,card_idle_hint:`請使用頂部「重新整理全部憑證」按鈕取得最新配額。`}",
+			new: "quota_management:{title:`配額管理`,description:`集中查看 OAuth 配額與剩餘情況`,refresh_files:`重新整理驗證檔案`,refresh_files_and_quota:`重新整理驗證檔案&配額`,refresh_all_credentials:`重新整理全部憑證`,card_idle_hint:`請使用頂部「重新整理全部憑證」按鈕取得最新配額。`,status_filter_label:`配額狀態篩選`,status_filter_all:`全部`,status_filter_normal:`正常`,status_filter_error:`異常`,status_filter_empty_title:`目前篩選沒有帳號`,status_filter_empty_desc:`請切換到「全部」或先重新整理全部憑證後再查看。`,delete_filtered_button:`全部刪除`,delete_filtered_title:`刪除目前篩選的 {{scope}} 帳號（{{count}} 個）`,delete_filtered_confirm:`確定要刪除目前篩選出的 {{count}} 個 {{scope}} 帳號嗎？此操作無法復原！`,delete_filtered_success:`成功刪除 {{count}} 個帳號`,delete_filtered_partial:`帳號刪除完成，成功 {{success}} 個，失敗 {{failed}} 個`,delete_filtered_failed:`刪除帳號失敗`,delete_filtered_none:`目前篩選沒有可刪除的帳號`}",
+		},
+		{
+			old: "quota_management:{title:`Quota Management`,description:`Monitor OAuth quota status for Antigravity, Codex, and Gemini CLI credentials.`,refresh_files:`Refresh auth files`,refresh_files_and_quota:`Refresh files & quota`,refresh_all_credentials:`Refresh all credentials`,card_idle_hint:`Use the top \"Refresh all credentials\" button to fetch the latest quota data.`}",
+			new: "quota_management:{title:`Quota Management`,description:`Monitor OAuth quota status for Antigravity, Codex, and Gemini CLI credentials.`,refresh_files:`Refresh auth files`,refresh_files_and_quota:`Refresh files & quota`,refresh_all_credentials:`Refresh all credentials`,card_idle_hint:`Use the top \"Refresh all credentials\" button to fetch the latest quota data.`,status_filter_label:`Quota status filter`,status_filter_all:`All`,status_filter_normal:`Normal`,status_filter_error:`Abnormal`,status_filter_empty_title:`No accounts in this filter`,status_filter_empty_desc:`Switch back to \"All\" or refresh all credentials first.`,delete_filtered_button:`Delete all`,delete_filtered_title:`Delete {{count}} {{scope}} accounts in the current filter`,delete_filtered_confirm:`Delete the {{count}} {{scope}} accounts in the current filter? This cannot be undone!`,delete_filtered_success:`Deleted {{count}} accounts`,delete_filtered_partial:`Account deletion finished: {{success}} succeeded, {{failed}} failed`,delete_filtered_failed:`Failed to delete accounts`,delete_filtered_none:`No deletable accounts in the current filter`}",
+		},
+		{
+			old: "quota_management:{title:`Управление квотами`,description:`Следите за статусом квот OAuth для учётных данных Antigravity, Codex и Gemini CLI.`,refresh_files:`Обновить файлы авторизации`,refresh_files_and_quota:`Обновить файлы и квоты`,refresh_all_credentials:`Обновить все учётные данные`,card_idle_hint:`Используйте кнопку «Обновить все учётные данные» сверху, чтобы загрузить актуальные данные по квотам.`}",
+			new: "quota_management:{title:`Управление квотами`,description:`Следите за статусом квот OAuth для учётных данных Antigravity, Codex и Gemini CLI.`,refresh_files:`Обновить файлы авторизации`,refresh_files_and_quota:`Обновить файлы и квоты`,refresh_all_credentials:`Обновить все учётные данные`,card_idle_hint:`Используйте кнопку «Обновить все учётные данные» сверху, чтобы загрузить актуальные данные по квотам.`,status_filter_label:`Фильтр статуса квоты`,status_filter_all:`Все`,status_filter_normal:`Нормальные`,status_filter_error:`Проблемные`,status_filter_empty_title:`Нет аккаунтов в этом фильтре`,status_filter_empty_desc:`Переключитесь на «Все» или сначала обновите все учётные данные.`,delete_filtered_button:`Удалить все`,delete_filtered_title:`Удалить {{count}} аккаунтов «{{scope}}» из текущего фильтра`,delete_filtered_confirm:`Удалить {{count}} аккаунтов «{{scope}}» из текущего фильтра? Это действие нельзя отменить!`,delete_filtered_success:`Удалено аккаунтов: {{count}}`,delete_filtered_partial:`Удаление аккаунтов завершено: успешно {{success}}, ошибок {{failed}}`,delete_filtered_failed:`Не удалось удалить аккаунты`,delete_filtered_none:`В текущем фильтре нет аккаунтов для удаления`}",
+		},
+		{
+			old: ".QuotaPage-module__pageSizeSelect___1AaaU{border:1px solid var(--border-color);background-color:var(--bg-primary);color:var(--text-primary);cursor:text;box-sizing:border-box;border-radius:8px;height:38px;padding:8px 12px;font-size:14px}",
+			new: ".QuotaPage-module__pageSizeSelect___1AaaU{border:1px solid var(--border-color);background-color:var(--bg-primary);color:var(--text-primary);cursor:pointer;box-sizing:border-box;border-radius:8px;height:38px;min-width:132px;padding:8px 12px;font-size:14px}",
 		},
 		{
 			old: "(0,I.jsx)(Vb,{config:hx,files:n,loading:i,disabled:c})",

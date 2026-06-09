@@ -23,8 +23,8 @@ func TestApplyQuotaPaginationPatchUpdatesQuotaPagination(t *testing.T) {
 			},
 			newParts: []string{
 				"var Rb=100,zb=1/0,Bb=(e,t=100)=>",
-				"S(g===`all`?Math.max(1,m.length):Rb)",
-				"m.length>0&&g===`paged`",
+				"S(le===`all`?Math.max(1,se.length):Rb)",
+				"se.length>0&&le===`paged`",
 			},
 		},
 		{
