@@ -1,10 +1,10 @@
 # Binaries
-cli-proxy-api
+# cli-proxy-api
 *.exe
 
 # Configuration
-config.yaml
-.env
+# config.yaml
+# .env
 
 # Generated content
 bin/*
@@ -28,9 +28,9 @@ auths/*
 
 # Documentation
 docs/*
-AGENTS.md
-CLAUDE.md
-GEMINI.md
+# AGENTS.md
+# CLAUDE.md
+# GEMINI.md
 
 # Tooling metadata
 .vscode/*
