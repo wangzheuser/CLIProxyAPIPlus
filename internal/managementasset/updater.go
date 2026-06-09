@@ -200,7 +200,35 @@ func ApplyQuotaPaginationPatch(data []byte) []byte {
 		},
 		{
 			old: "function Vb({config:e,files:t,loading:n,disabled:r}){let{t:i}=qo(),a=jc(e=>e.resolvedTheme),o=Sc(e=>e.showNotification),s=lp(t=>t[e.storeSetter]),[c,l]=Lb(380)",
-			new: "function Vb({config:e,files:t,loading:n,disabled:r,onDeleted:q}){let{t:i}=qo(),a=jc(e=>e.resolvedTheme),o=Sc(e=>e.showNotification),P=Sc(e=>e.showConfirmation),s=lp(t=>t[e.storeSetter]),[F,ne]=(0,y.useState)(null),[c,l]=Lb(380)",
+			new: "function Vb({config:e,files:t,loading:n,disabled:r,onDeleted:q}){let{t:i}=qo(),a=jc(e=>e.resolvedTheme),o=Sc(e=>e.showNotification),P=Sc(e=>e.showConfirmation),s=lp(t=>t[e.storeSetter]),[F,ne]=(0,y.useState)(null),[re,ie]=(0,y.useState)(`all`),[ae,oe]=(0,y.useState)(!1),{quota:D,loadQuota:O}=Ib(e),[c,l]=Lb(380)",
+		},
+		{
+			old: "m=(0,y.useMemo)(()=>t.filter(t=>e.filterFn(t)),[t,e]),h=m.length<=zb,g=u===`all`&&!h?`paged`:u,{pageSize:_,totalPages:v,currentPage:b,pageItems:x,setPageSize:S,goToPrev:C,goToNext:w,loading:T,setLoading:E}=Bb(m);",
+			new: "m=(0,y.useMemo)(()=>t.filter(t=>e.filterFn(t)),[t,e]),h=(0,y.useMemo)(()=>m.reduce((e,t)=>e+(D[t.name]?.status===`success`?1:0),0),[m,D]),g=(0,y.useMemo)(()=>m.reduce((e,t)=>e+(D[t.name]?.status===`error`?1:0),0),[m,D]),se=(0,y.useMemo)(()=>re===`normal`?m.filter(e=>D[e.name]?.status===`success`):re===`error`?m.filter(e=>D[e.name]?.status===`error`):m,[m,D,re]),ce=se.length<=zb,le=u===`all`&&!ce?`paged`:u,{pageSize:_,totalPages:v,currentPage:b,pageItems:x,setPageSize:S,goToPrev:C,goToNext:w,loading:T,setLoading:E}=Bb(se);",
+		},
+		{
+			old: "if(h||u!==`all`)return;",
+			new: "if(ce||u!==`all`)return;",
+		},
+		{
+			old: "},[h,u]),",
+			new: "},[ce,u]),",
+		},
+		{
+			old: "S(g===`all`?Math.max(1,m.length):Rb)",
+			new: "S(le===`all`?Math.max(1,se.length):Rb)",
+		},
+		{
+			old: "},[g,c,m.length,S]);let{quota:D,loadQuota:O}=Ib(e),k=",
+			new: "},[le,c,se.length,S]);let k=",
+		},
+		{
+			old: "let t=g===`all`?`all`:`page`,r=g===`all`?m:x;r.length!==0&&O(r,t,E)",
+			new: "let t=le===`all`?`all`:`page`,r=le===`all`?se:x;r.length!==0&&O(r,t,E)",
+		},
+		{
+			old: "},[n,g,m,x,O,E])",
+			new: "},[n,le,se,x,O,E])",
 		},
 		{
 			old: "},[e,r,D,s,o,i]),M=(0,I.jsxs)(`div`,{className:U.titleWrapper",
@@ -211,8 +239,36 @@ func ApplyQuotaPaginationPatch(data []byte) []byte {
 			new: "canRefresh:!r&&!t.disabled,onRefresh:()=>void ee(t),canDelete:!r,onDelete:()=>te(t),deleting:F===t.name,renderQuotaItems:e.renderQuotaItems}",
 		},
 		{
+			old: "m.length>0&&(0,I.jsx)(`span`,{className:U.countBadge,children:m.length})",
+			new: "m.length>0&&(0,I.jsx)(`span`,{className:U.countBadge,children:se.length})",
+		},
+		{
+			old: "children:[(0,I.jsxs)(`div`,{className:U.viewModeToggle",
+			new: "children:[(0,I.jsxs)(`select`,{className:U.pageSizeSelect,value:re,onChange:e=>ie(e.target.value),disabled:r,title:i(`quota_management.status_filter_label`),\"aria-label\":i(`quota_management.status_filter_label`),children:[(0,I.jsx)(`option`,{value:`all`,children:`${i(`quota_management.status_filter_all`)} (${m.length})`}),(0,I.jsx)(`option`,{value:`normal`,children:`${i(`quota_management.status_filter_normal`)} (${h})`}),(0,I.jsx)(`option`,{value:`error`,children:`${i(`quota_management.status_filter_error`)} (${g})`})]}),(0,I.jsx)(L,{variant:`danger`,size:`sm`,onClick:()=>{if(r||ae||N)return;let e=re===`normal`?i(`quota_management.status_filter_normal`):re===`error`?i(`quota_management.status_filter_error`):i(`quota_management.status_filter_all`);se.length===0?o(i(`quota_management.delete_filtered_none`),`warning`):P({title:i(`quota_management.delete_filtered_button`),message:i(`quota_management.delete_filtered_confirm`,{scope:e,count:se.length}),variant:`danger`,confirmText:i(`common.confirm`),onConfirm:async()=>{oe(!0);let e=se.map(e=>e.name);try{let t=await Gh.deleteFiles(e),n=new Set((t.failed??[]).map(e=>String(e?.name??``).trim()).filter(Boolean)),r=t.files&&t.files.length?t.files:e.filter(e=>!n.has(e)),a=t.deleted??r.length;r.length&&s(e=>{let t={...e};return r.forEach(e=>{delete t[e]}),t});if(q)try{await q()}catch(e){let t=e instanceof Error?e.message:``;o(`${i(`notification.refresh_failed`)}: ${t}`,`error`)}(t.failed?.length??0)>0?o(i(`quota_management.delete_filtered_partial`,{success:a,failed:t.failed.length}),`warning`):o(i(`quota_management.delete_filtered_success`,{count:a}),`success`)}catch(e){let t=e instanceof Error?e.message:i(`common.unknown_error`);o(`${i(`quota_management.delete_filtered_failed`)}: ${t}`,`error`)}finally{oe(!1)}}})},disabled:r||ae||N||se.length===0,loading:ae,title:i(`quota_management.delete_filtered_title`,{scope:re===`normal`?i(`quota_management.status_filter_normal`):re===`error`?i(`quota_management.status_filter_error`):i(`quota_management.status_filter_all`),count:se.length}),children:i(`quota_management.delete_filtered_button`)}),(0,I.jsxs)(`div`,{className:U.viewModeToggle",
+		},
+		{
+			old: "${U.viewModeButton} ${g===`paged`?U.viewModeButtonActive:``}",
+			new: "${U.viewModeButton} ${le===`paged`?U.viewModeButtonActive:``}",
+		},
+		{
+			old: "${U.viewModeButton} ${g===`all`?U.viewModeButtonActive:``}",
+			new: "${U.viewModeButton} ${le===`all`?U.viewModeButtonActive:``}",
+		},
+		{
+			old: "m.length>zb?p(!0):d(`all`)",
+			new: "se.length>zb?p(!0):d(`all`)",
+		},
+		{
+			old: "m.length===0?(0,I.jsx)(Bv,{title:i(`${e.i18nPrefix}.empty_title`),description:i(`${e.i18nPrefix}.empty_desc`)})",
+			new: "se.length===0?(0,I.jsx)(Bv,{title:i(m.length===0?`${e.i18nPrefix}.empty_title`:`quota_management.status_filter_empty_title`),description:i(m.length===0?`${e.i18nPrefix}.empty_desc`:`quota_management.status_filter_empty_desc`)})",
+		},
+		{
+			old: "count:m.length",
+			new: "count:se.length",
+		},
+		{
 			old: "m.length>_&&g===`paged`",
-			new: "m.length>0&&g===`paged`",
+			new: "se.length>0&&le===`paged`",
 		},
 		{
 			old: "var Rb=25,zb=30,Bb=(e,t=6)=>",
