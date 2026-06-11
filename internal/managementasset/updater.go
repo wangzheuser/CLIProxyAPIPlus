@@ -81,16 +81,8 @@ func runAutoUpdater(ctx context.Context) {
 
 	runOnce := func() {
 		cfg := currentConfigPtr.Load()
-		if cfg == nil {
-			log.Debug("management asset auto-updater skipped: config not yet available")
-			return
-		}
-		if cfg.RemoteManagement.DisableControlPanel {
-			log.Debug("management asset auto-updater skipped: control panel disabled")
-			return
-		}
-		if cfg.RemoteManagement.DisableAutoUpdatePanel {
-			log.Debug("management asset auto-updater skipped: disable-auto-update-panel is enabled")
+		if reason, skip := autoUpdateSkipReason(cfg); skip {
+			log.Debugf("management asset auto-updater skipped: %s", reason)
 			return
 		}
 
@@ -109,6 +101,22 @@ func runAutoUpdater(ctx context.Context) {
 			runOnce()
 		}
 	}
+}
+
+func autoUpdateSkipReason(cfg *config.Config) (string, bool) {
+	if cfg == nil {
+		return "config not yet available", true
+	}
+	if cfg.Home.Enabled {
+		return "cluster mode enabled", true
+	}
+	if cfg.RemoteManagement.DisableControlPanel {
+		return "control panel disabled", true
+	}
+	if cfg.RemoteManagement.DisableAutoUpdatePanel {
+		return "disable-auto-update-panel is enabled", true
+	}
+	return "", false
 }
 
 func newHTTPClient(proxyURL string) *http.Client {
@@ -175,189 +183,6 @@ func FilePath(configFilePath string) string {
 		return ""
 	}
 	return filepath.Join(dir, ManagementFileName)
-}
-
-// ApplyQuotaPaginationPatch keeps local management UI fixes applied to upstream bundles.
-func ApplyQuotaPaginationPatch(data []byte) []byte {
-	if len(data) == 0 {
-		return data
-	}
-
-	html := string(data)
-	patched := html
-
-	for _, replacement := range []struct {
-		old string
-		new string
-	}{
-		{
-			old: "function Pb({item:e,quota:t,resolvedTheme:n,i18nPrefix:r,cardIdleMessageKey:i,cardClassName:a,defaultType:o,canRefresh:s=!1,onRefresh:c,renderQuotaItems:l}){let{t:u}=qo(),d=",
-			new: "function Pb({item:e,quota:t,resolvedTheme:n,i18nPrefix:r,cardIdleMessageKey:i,cardClassName:a,defaultType:o,canRefresh:s=!1,onRefresh:c,canDelete:P=!1,onDelete:F,deleting:ne=!1,renderQuotaItems:l}){let{t:u}=qo(),d=",
-		},
-		{
-			old: "children:[(0,I.jsx)(`span`,{className:U.typeBadge,style:{backgroundColor:p.bg,color:p.text,...p.border?{border:p.border}:{}},children:_(d)}),(0,I.jsx)(`span`,{className:U.fileName,children:e.name})]}),(0,I.jsx)(`div`,{className:U.quotaSection",
-			new: "children:[(0,I.jsx)(`span`,{className:U.typeBadge,style:{backgroundColor:p.bg,color:p.text,...p.border?{border:p.border}:{}},children:_(d)}),(0,I.jsx)(`span`,{className:U.fileName,style:{flex:1,minWidth:0},children:e.name}),F&&(0,I.jsx)(L,{variant:`danger`,size:`sm`,onClick:F,disabled:!P||ne,title:u(`auth_files.delete_button`),children:ne?(0,I.jsx)(gy,{size:14}):u(`common.delete`)})]}),(0,I.jsx)(`div`,{className:U.quotaSection",
-		},
-		{
-			old: "function Vb({config:e,files:t,loading:n,disabled:r}){let{t:i}=qo(),a=jc(e=>e.resolvedTheme),o=Sc(e=>e.showNotification),s=lp(t=>t[e.storeSetter]),[c,l]=Lb(380)",
-			new: "function Vb({config:e,files:t,loading:n,disabled:r,onDeleted:q}){let{t:i}=qo(),a=jc(e=>e.resolvedTheme),o=Sc(e=>e.showNotification),P=Sc(e=>e.showConfirmation),s=lp(t=>t[e.storeSetter]),[F,ne]=(0,y.useState)(null),[re,ie]=(0,y.useState)(`all`),[ae,oe]=(0,y.useState)(!1),{quota:D,loadQuota:O}=Ib(e),[c,l]=Lb(380)",
-		},
-		{
-			old: "m=(0,y.useMemo)(()=>t.filter(t=>e.filterFn(t)),[t,e]),h=m.length<=zb,g=u===`all`&&!h?`paged`:u,{pageSize:_,totalPages:v,currentPage:b,pageItems:x,setPageSize:S,goToPrev:C,goToNext:w,loading:T,setLoading:E}=Bb(m);",
-			new: "m=(0,y.useMemo)(()=>t.filter(t=>e.filterFn(t)),[t,e]),h=(0,y.useMemo)(()=>m.reduce((e,t)=>e+(D[t.name]?.status===`success`?1:0),0),[m,D]),g=(0,y.useMemo)(()=>m.reduce((e,t)=>e+(D[t.name]?.status===`error`?1:0),0),[m,D]),se=(0,y.useMemo)(()=>re===`normal`?m.filter(e=>D[e.name]?.status===`success`):re===`error`?m.filter(e=>D[e.name]?.status===`error`):m,[m,D,re]),ce=se.length<=zb,le=u===`all`&&!ce?`paged`:u,{pageSize:_,totalPages:v,currentPage:b,pageItems:x,setPageSize:S,goToPrev:C,goToNext:w,loading:T,setLoading:E}=Bb(se);",
-		},
-		{
-			old: "if(h||u!==`all`)return;",
-			new: "if(ce||u!==`all`)return;",
-		},
-		{
-			old: "},[h,u]),",
-			new: "},[ce,u]),",
-		},
-		{
-			old: "S(g===`all`?Math.max(1,m.length):Math.min(c*3,Rb))",
-			new: "S(le===`all`?Math.max(1,se.length):Rb)",
-		},
-		{
-			old: "},[g,c,m.length,S]);let{quota:D,loadQuota:O}=Ib(e),k=",
-			new: "},[le,c,se.length,S]);let k=",
-		},
-		{
-			old: "let t=g===`all`?`all`:`page`,r=g===`all`?m:x;r.length!==0&&O(r,t,E)",
-			new: "let t=le===`all`?`all`:`page`,r=le===`all`?se:x;r.length!==0&&O(r,t,E)",
-		},
-		{
-			old: "},[n,g,m,x,O,E])",
-			new: "},[n,le,se,x,O,E])",
-		},
-		{
-			old: "},[e,r,D,s,o,i]),M=(0,I.jsxs)(`div`,{className:U.titleWrapper",
-			new: "},[e,r,D,s,o,i]),te=(0,y.useCallback)(t=>{if(r||F)return;P({title:i(`auth_files.delete_title`,{defaultValue:`Delete File`}),message:`${i(`auth_files.delete_confirm`)} \"${t.name}\" ?`,variant:`danger`,confirmText:i(`common.confirm`),onConfirm:async()=>{ne(t.name);try{await Gh.deleteFile(t.name),o(i(`auth_files.delete_success`),`success`),s(e=>{let n={...e};return delete n[t.name],n});if(q)try{await q()}catch(t){let n=t instanceof Error?t.message:``;o(`${i(`notification.refresh_failed`)}: ${n}`,`error`)}}catch(t){let n=t instanceof Error?t.message:``;o(`${i(`notification.delete_failed`)}: ${n}`,`error`)}finally{ne(null)}}})},[r,F,P,i,o,s,q]),M=(0,I.jsxs)(`div`,{className:U.titleWrapper",
-		},
-		{
-			old: "canRefresh:!r&&!t.disabled,onRefresh:()=>void ee(t),renderQuotaItems:e.renderQuotaItems}",
-			new: "canRefresh:!r&&!t.disabled,onRefresh:()=>void ee(t),canDelete:!r,onDelete:()=>te(t),deleting:F===t.name,renderQuotaItems:e.renderQuotaItems}",
-		},
-		{
-			old: "m.length>0&&(0,I.jsx)(`span`,{className:U.countBadge,children:m.length})",
-			new: "m.length>0&&(0,I.jsx)(`span`,{className:U.countBadge,children:se.length})",
-		},
-		{
-			old: "children:[(0,I.jsxs)(`div`,{className:U.viewModeToggle",
-			new: "children:[(0,I.jsxs)(`select`,{className:U.pageSizeSelect,value:re,onChange:e=>ie(e.target.value),disabled:r,title:i(`quota_management.status_filter_label`),\"aria-label\":i(`quota_management.status_filter_label`),children:[(0,I.jsx)(`option`,{value:`all`,children:`${i(`quota_management.status_filter_all`)} (${m.length})`}),(0,I.jsx)(`option`,{value:`normal`,children:`${i(`quota_management.status_filter_normal`)} (${h})`}),(0,I.jsx)(`option`,{value:`error`,children:`${i(`quota_management.status_filter_error`)} (${g})`})]}),(0,I.jsx)(L,{variant:`danger`,size:`sm`,onClick:()=>{if(r||ae||N)return;let e=re===`normal`?i(`quota_management.status_filter_normal`):re===`error`?i(`quota_management.status_filter_error`):i(`quota_management.status_filter_all`);se.length===0?o(i(`quota_management.delete_filtered_none`),`warning`):P({title:i(`quota_management.delete_filtered_button`),message:i(`quota_management.delete_filtered_confirm`,{scope:e,count:se.length}),variant:`danger`,confirmText:i(`common.confirm`),onConfirm:async()=>{oe(!0);let e=se.map(e=>e.name);try{let t=await Gh.deleteFiles(e),n=new Set((t.failed??[]).map(e=>String(e?.name??``).trim()).filter(Boolean)),r=t.files&&t.files.length?t.files:e.filter(e=>!n.has(e)),a=t.deleted??r.length;r.length&&s(e=>{let t={...e};return r.forEach(e=>{delete t[e]}),t});if(q)try{await q()}catch(e){let t=e instanceof Error?e.message:``;o(`${i(`notification.refresh_failed`)}: ${t}`,`error`)}(t.failed?.length??0)>0?o(i(`quota_management.delete_filtered_partial`,{success:a,failed:t.failed.length}),`warning`):o(i(`quota_management.delete_filtered_success`,{count:a}),`success`)}catch(e){let t=e instanceof Error?e.message:i(`common.unknown_error`);o(`${i(`quota_management.delete_filtered_failed`)}: ${t}`,`error`)}finally{oe(!1)}}})},disabled:r||ae||N||se.length===0,loading:ae,title:i(`quota_management.delete_filtered_title`,{scope:re===`normal`?i(`quota_management.status_filter_normal`):re===`error`?i(`quota_management.status_filter_error`):i(`quota_management.status_filter_all`),count:se.length}),children:i(`quota_management.delete_filtered_button`)}),(0,I.jsxs)(`div`,{className:U.viewModeToggle",
-		},
-		{
-			old: "${U.viewModeButton} ${g===`paged`?U.viewModeButtonActive:``}",
-			new: "${U.viewModeButton} ${le===`paged`?U.viewModeButtonActive:``}",
-		},
-		{
-			old: "${U.viewModeButton} ${g===`all`?U.viewModeButtonActive:``}",
-			new: "${U.viewModeButton} ${le===`all`?U.viewModeButtonActive:``}",
-		},
-		{
-			old: "m.length>zb?p(!0):d(`all`)",
-			new: "se.length>zb?p(!0):d(`all`)",
-		},
-		{
-			old: "m.length===0?(0,I.jsx)(Bv,{title:i(`${e.i18nPrefix}.empty_title`),description:i(`${e.i18nPrefix}.empty_desc`)})",
-			new: "se.length===0?(0,I.jsx)(Bv,{title:i(m.length===0?`${e.i18nPrefix}.empty_title`:`quota_management.status_filter_empty_title`),description:i(m.length===0?`${e.i18nPrefix}.empty_desc`:`quota_management.status_filter_empty_desc`)})",
-		},
-		{
-			old: "children:i(`auth_files.pagination_info`,{current:b,total:v,count:m.length})",
-			new: "children:i(`auth_files.pagination_info`,{current:b,total:v,count:se.length})",
-		},
-		{
-			old: "m.length>_&&g===`paged`",
-			new: "se.length>0&&le===`paged`",
-		},
-		{
-			old: "var Rb=25,zb=30,Bb=(e,t=6)=>",
-			new: "var Rb=100,zb=1/0,Bb=(e,t=100)=>",
-		},
-		{
-			old: "var Rb=150,zb=1/0,Bb=",
-			new: "var Rb=100,zb=1/0,Bb=",
-		},
-		{
-			old: "Bb=(e,t=150)=>",
-			new: "Bb=(e,t=100)=>",
-		},
-		{
-			old: "Math.min(c*3,Rb)",
-			new: "Rb",
-		},
-		{
-			old: "ty=e=>Math.min(30,Math.max(3,Math.round(e)))",
-			new: "ty=e=>Math.min(100,Math.max(3,Math.round(e)))",
-		},
-		{
-			old: "i<3||i>30||",
-			new: "i<3||i>100||",
-		},
-		{
-			old: "i<3||i>30",
-			new: "i<3||i>100",
-		},
-		{
-			old: "min:3,max:30,step:1",
-			new: "min:3,max:100,step:1",
-		},
-		{
-			old: "max:30,step:1",
-			new: "max:100,step:1",
-		},
-		{
-			old: "quota_management:{title:`配额管理`,description:`集中查看 OAuth 额度与剩余情况`,refresh_files:`刷新认证文件`,refresh_files_and_quota:`刷新认证文件&额度`,refresh_all_credentials:`刷新全部凭证`,card_idle_hint:`请使用顶部“刷新全部凭证”按钮获取最新额度。`}",
-			new: "quota_management:{title:`配额管理`,description:`集中查看 OAuth 额度与剩余情况`,refresh_files:`刷新认证文件`,refresh_files_and_quota:`刷新认证文件&额度`,refresh_all_credentials:`刷新全部凭证`,card_idle_hint:`请使用顶部“刷新全部凭证”按钮获取最新额度。`,status_filter_label:`额度状态筛选`,status_filter_all:`全部`,status_filter_normal:`正常`,status_filter_error:`异常`,status_filter_empty_title:`当前筛选没有账号`,status_filter_empty_desc:`请切换到“全部”或先刷新全部凭证后再查看。`,delete_filtered_button:`全部删除`,delete_filtered_title:`删除当前筛选的 {{scope}} 账号（{{count}} 个）`,delete_filtered_confirm:`确定要删除当前筛选出的 {{count}} 个 {{scope}} 账号吗？此操作不可恢复！`,delete_filtered_success:`成功删除 {{count}} 个账号`,delete_filtered_partial:`账号删除完成，成功 {{success}} 个，失败 {{failed}} 个`,delete_filtered_failed:`删除账号失败`,delete_filtered_none:`当前筛选没有可删除的账号`}",
-		},
-		{
-			old: "quota_management:{title:`配額管理`,description:`集中查看 OAuth 配額與剩餘情況`,refresh_files:`重新整理驗證檔案`,refresh_files_and_quota:`重新整理驗證檔案&配額`,refresh_all_credentials:`重新整理全部憑證`,card_idle_hint:`請使用頂部「重新整理全部憑證」按鈕取得最新配額。`}",
-			new: "quota_management:{title:`配額管理`,description:`集中查看 OAuth 配額與剩餘情況`,refresh_files:`重新整理驗證檔案`,refresh_files_and_quota:`重新整理驗證檔案&配額`,refresh_all_credentials:`重新整理全部憑證`,card_idle_hint:`請使用頂部「重新整理全部憑證」按鈕取得最新配額。`,status_filter_label:`配額狀態篩選`,status_filter_all:`全部`,status_filter_normal:`正常`,status_filter_error:`異常`,status_filter_empty_title:`目前篩選沒有帳號`,status_filter_empty_desc:`請切換到「全部」或先重新整理全部憑證後再查看。`,delete_filtered_button:`全部刪除`,delete_filtered_title:`刪除目前篩選的 {{scope}} 帳號（{{count}} 個）`,delete_filtered_confirm:`確定要刪除目前篩選出的 {{count}} 個 {{scope}} 帳號嗎？此操作無法復原！`,delete_filtered_success:`成功刪除 {{count}} 個帳號`,delete_filtered_partial:`帳號刪除完成，成功 {{success}} 個，失敗 {{failed}} 個`,delete_filtered_failed:`刪除帳號失敗`,delete_filtered_none:`目前篩選沒有可刪除的帳號`}",
-		},
-		{
-			old: "quota_management:{title:`Quota Management`,description:`Monitor OAuth quota status for Antigravity, Codex, and Gemini CLI credentials.`,refresh_files:`Refresh auth files`,refresh_files_and_quota:`Refresh files & quota`,refresh_all_credentials:`Refresh all credentials`,card_idle_hint:`Use the top \"Refresh all credentials\" button to fetch the latest quota data.`}",
-			new: "quota_management:{title:`Quota Management`,description:`Monitor OAuth quota status for Antigravity, Codex, and Gemini CLI credentials.`,refresh_files:`Refresh auth files`,refresh_files_and_quota:`Refresh files & quota`,refresh_all_credentials:`Refresh all credentials`,card_idle_hint:`Use the top \"Refresh all credentials\" button to fetch the latest quota data.`,status_filter_label:`Quota status filter`,status_filter_all:`All`,status_filter_normal:`Normal`,status_filter_error:`Abnormal`,status_filter_empty_title:`No accounts in this filter`,status_filter_empty_desc:`Switch back to \"All\" or refresh all credentials first.`,delete_filtered_button:`Delete all`,delete_filtered_title:`Delete {{count}} {{scope}} accounts in the current filter`,delete_filtered_confirm:`Delete the {{count}} {{scope}} accounts in the current filter? This cannot be undone!`,delete_filtered_success:`Deleted {{count}} accounts`,delete_filtered_partial:`Account deletion finished: {{success}} succeeded, {{failed}} failed`,delete_filtered_failed:`Failed to delete accounts`,delete_filtered_none:`No deletable accounts in the current filter`}",
-		},
-		{
-			old: "quota_management:{title:`Управление квотами`,description:`Следите за статусом квот OAuth для учётных данных Antigravity, Codex и Gemini CLI.`,refresh_files:`Обновить файлы авторизации`,refresh_files_and_quota:`Обновить файлы и квоты`,refresh_all_credentials:`Обновить все учётные данные`,card_idle_hint:`Используйте кнопку «Обновить все учётные данные» сверху, чтобы загрузить актуальные данные по квотам.`}",
-			new: "quota_management:{title:`Управление квотами`,description:`Следите за статусом квот OAuth для учётных данных Antigravity, Codex и Gemini CLI.`,refresh_files:`Обновить файлы авторизации`,refresh_files_and_quota:`Обновить файлы и квоты`,refresh_all_credentials:`Обновить все учётные данные`,card_idle_hint:`Используйте кнопку «Обновить все учётные данные» сверху, чтобы загрузить актуальные данные по квотам.`,status_filter_label:`Фильтр статуса квоты`,status_filter_all:`Все`,status_filter_normal:`Нормальные`,status_filter_error:`Проблемные`,status_filter_empty_title:`Нет аккаунтов в этом фильтре`,status_filter_empty_desc:`Переключитесь на «Все» или сначала обновите все учётные данные.`,delete_filtered_button:`Удалить все`,delete_filtered_title:`Удалить {{count}} аккаунтов «{{scope}}» из текущего фильтра`,delete_filtered_confirm:`Удалить {{count}} аккаунтов «{{scope}}» из текущего фильтра? Это действие нельзя отменить!`,delete_filtered_success:`Удалено аккаунтов: {{count}}`,delete_filtered_partial:`Удаление аккаунтов завершено: успешно {{success}}, ошибок {{failed}}`,delete_filtered_failed:`Не удалось удалить аккаунты`,delete_filtered_none:`В текущем фильтре нет аккаунтов для удаления`}",
-		},
-		{
-			old: ".QuotaPage-module__pageSizeSelect___1AaaU{border:1px solid var(--border-color);background-color:var(--bg-primary);color:var(--text-primary);cursor:text;box-sizing:border-box;border-radius:8px;height:38px;padding:8px 12px;font-size:14px}",
-			new: ".QuotaPage-module__pageSizeSelect___1AaaU{border:1px solid var(--border-color);background-color:var(--bg-primary);color:var(--text-primary);cursor:pointer;box-sizing:border-box;border-radius:8px;height:38px;min-width:132px;padding:8px 12px;font-size:14px}",
-		},
-		{
-			old: "(0,I.jsx)(Vb,{config:hx,files:n,loading:i,disabled:c})",
-			new: "(0,I.jsx)(Vb,{config:hx,files:n,loading:i,disabled:c,onDeleted:u})",
-		},
-		{
-			old: "(0,I.jsx)(Vb,{config:gx,files:n,loading:i,disabled:c})",
-			new: "(0,I.jsx)(Vb,{config:gx,files:n,loading:i,disabled:c,onDeleted:u})",
-		},
-		{
-			old: "(0,I.jsx)(Vb,{config:_x,files:n,loading:i,disabled:c})",
-			new: "(0,I.jsx)(Vb,{config:_x,files:n,loading:i,disabled:c,onDeleted:u})",
-		},
-		{
-			old: "(0,I.jsx)(Vb,{config:Ox,files:n,loading:i,disabled:c})",
-			new: "(0,I.jsx)(Vb,{config:Ox,files:n,loading:i,disabled:c,onDeleted:u})",
-		},
-		{
-			old: "(0,I.jsx)(Vb,{config:vx,files:n,loading:i,disabled:c})",
-			new: "(0,I.jsx)(Vb,{config:vx,files:n,loading:i,disabled:c,onDeleted:u})",
-		},
-		{
-			old: "(0,I.jsx)(Vb,{config:Dx,files:n,loading:i,disabled:c})",
-			new: "(0,I.jsx)(Vb,{config:Dx,files:n,loading:i,disabled:c,onDeleted:u})",
-		},
-	} {
-		patched = strings.ReplaceAll(patched, replacement.old, replacement.new)
-	}
-
-	if patched == html {
-		return data
-	}
-	return []byte(patched)
 }
 
 // EnsureLatestManagementHTML checks the latest management.html asset and updates the local copy when needed.
